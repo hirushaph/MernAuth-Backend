@@ -132,7 +132,7 @@ async function updateUser(req, res) {
       throw new Error("Update body cannot be empty");
 
     // update the user
-    const updateUser = UserModel.updateOne({ _id: userId }, body);
+    const updateUser = await UserModel.findOneAndUpdate({ _id: userId }, body);
 
     if (!updateUser) throw new Error("User Update Failed");
 
