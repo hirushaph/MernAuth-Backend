@@ -3,6 +3,10 @@ const jwt = require("jsonwebtoken");
 const validator = require("validator");
 const UserModel = require("../models/userModel");
 
+const otpGenerator = require("otp-generator");
+const OtpModel = require("../models/passwordOtpModel");
+const CustomError = require("../utils/customError");
+
 // bcrypt salt rounds
 const saltRounds = 10;
 
@@ -194,6 +198,77 @@ async function refreshToken(req, res) {
   }
 }
 
+async function generateOtp(req, res, next) {
+  try {
+    const { username } = req?.query;
+    if (!username) throw new Error("Username is required");
+
+    const user = await UserModel.findOne({ username });
+
+    const otp = otpGenerator.generate(6, {
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
+
+    bcrypt.hash(otp, 10, function (err, hash) {
+      if (err) throw new Error("Failed generate otp");
+
+      const newOtp = new OtpModel({
+        userId: user._id.toString(),
+        otp: hash,
+        expiredAt: Date.now() + 60 * 60 * 1000,
+      });
+
+      newOtp
+        .save()
+        .then(() => {
+          // TODO Send otp via email
+          return res.json({
+            msg: "otp send successfulluy",
+            otp,
+            username: user.username,
+          });
+        })
+        .catch((err) => {
+          next(err);
+        });
+    });
+
+    console.log(otp);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function verifyOtp(req, res, next) {
+  try {
+    const { otp, username } = req.body;
+    if (!otp) throw new CustomError("Otp is required", 400);
+    if (!username) throw new CustomError("Username is required", 400);
+
+    const user = await UserModel.findOne({ username });
+    if (!user) throw new CustomError("Username not Found", 400);
+    const userId = user._id.toString();
+
+    const hashedOtp = await OtpModel.findOne({ userId });
+
+    if (!hashedOtp) throw new CustomError("OTP is not valid", 400);
+
+    bcrypt.compare(otp, hashedOtp.otp, function (err, result) {
+      if (err) next(err);
+
+      if (!result) throw new CustomError("Otp is not valid", 400);
+
+      OtpModel.deleteMany({ userId }).then(() => {
+        res.send({ msg: "Otp Verified" });
+      });
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function logout(req, res) {
   const { jwt } = req.cookies;
   if (!cookies?.jwt) return res.status(204);
@@ -208,5 +283,7 @@ module.exports = {
   getUser,
   updateUser,
   refreshToken,
+  generateOtp,
+  verifyOtp,
   logout,
 };
