@@ -1,17 +1,26 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const validator = require("validator");
 const UserModel = require("../models/userModel");
 
 // bcrypt salt rounds
 const saltRounds = 10;
 
 async function registerUser(req, res) {
-  try {
-    const { username, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-    if (!username) return res.send({ error: "Username is required" });
-    if (!email) return res.send({ error: "Email is required" });
-    if (!password) return res.send({ error: "Password is required" });
+  try {
+    if (!username)
+      return res.status(400).send({ error: "Username is required" });
+    if (!email) return res.status(400).send({ error: "Email is required" });
+    if (!password)
+      return res.status(400).send({ error: "Password is required" });
+
+    if (!validator.isEmail(email))
+      return res.status(400).send({ error: "Email is not valid" });
+
+    if (!validator.isStrongPassword(password))
+      return res.status(400).send({ error: "Password must be strong" });
 
     // check username and email already exits
     const usernameExits = await UserModel.exists({ username });
@@ -50,9 +59,9 @@ async function registerUser(req, res) {
 }
 
 async function login(req, res) {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
+  try {
     if (!username) return res.send({ error: "Username is required" });
     if (!password) return res.send({ error: "Password is required" });
 
