@@ -20,6 +20,24 @@ const PORT = process.env.PORT || "3000";
 
 app.use("/api/v1", router);
 
+app.all("*", (req, res, next) => {
+  const error = new Error(`can't find ${req.originalUrl} on the server`);
+  error.status = "fail";
+  error.statusCode = 404;
+  next(error);
+});
+
+// Error Handle Middleware
+
+app.use((error, req, res, next) => {
+  error.statusCode = error.statusCode || 500;
+  error.status = error.status || "error";
+  res.status(error.statusCode).json({
+    status: error.status,
+    message: error.message,
+  });
+});
+
 // Start Server if datbase connected
 async function initializeApp() {
   try {
