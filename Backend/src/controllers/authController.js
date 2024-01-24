@@ -6,6 +6,13 @@ const UserModel = require("../models/userModel");
 // bcrypt salt rounds
 const saltRounds = 10;
 
+function createToken(data) {
+  const token = jwt.sign(data, process.env.JWT_SKEY, {
+    expiresIn: "24h",
+  });
+  return token;
+}
+
 async function registerUser(req, res) {
   const { username, email, password } = req.body;
 
@@ -29,7 +36,7 @@ async function registerUser(req, res) {
       let erros = [];
 
       if (usernameExits) erros.push("Username unavaliable");
-      if (emailExits) erros.push("Email already in use ");
+      if (emailExits) erros.push("Email already in use");
 
       return res.status(400).json({ erros });
     }
@@ -48,8 +55,15 @@ async function registerUser(req, res) {
       // save user to db
       user
         .save()
-        .then(() => {
-          res.status(201).send({ msg: "User registerd successfully" });
+        .then((user) => {
+          // generate token
+
+          const token = createToken({
+            userId: user._id,
+            username: user.username,
+          });
+
+          res.status(201).send({ msg: "User registerd successfully", token });
         })
         .catch((err) => res.status(500).send(err));
     });
@@ -75,16 +89,10 @@ async function login(req, res) {
 
       if (!result) return res.status(400).send({ error: "Wrong Password" });
 
-      const token = jwt.sign(
-        {
-          userId: user._id,
-          username: user.username,
-        },
-        process.env.JWT_SKEY,
-        {
-          expiresIn: "24h",
-        }
-      );
+      const token = createToken({
+        userId: user._id,
+        username: user.username,
+      });
 
       return res.status(200).send({
         msg: "Login Successfull",
@@ -98,7 +106,16 @@ async function login(req, res) {
 }
 
 async function getUser(req, res) {
-  res.json("getuser");
+  const { username } = req.params;
+
+  if (!username) return res.send(400).send({ error: "Username is required" });
+
+  const user = await UserModel.findOne({ username });
+
+  if (!user) return res.status(500).send({ error: "User not found" });
+
+  const { password, ...rest } = user.toJSON();
+  res.send(rest);
 }
 
 async function updateUser(req, res) {
