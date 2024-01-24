@@ -7,8 +7,15 @@ const UserModel = require("../models/userModel");
 const saltRounds = 10;
 
 function createToken(data) {
-  const token = jwt.sign(data, process.env.JWT_SKEY, {
-    expiresIn: "24h",
+  const token = jwt.sign(data, process.env.JWT_ACCESS_SECRET, {
+    expiresIn: "10m",
+  });
+  return token;
+}
+
+function createRefreshToken(data) {
+  const token = jwt.sign(data, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: "90d",
   });
   return token;
 }
@@ -63,7 +70,14 @@ async function registerUser(req, res) {
             username: user.username,
           });
 
-          res.status(201).send({ msg: "User registerd successfully", token });
+          const refreshToken = createRefreshToken({
+            userId: user._id,
+            username: user.username,
+          });
+
+          res
+            .status(201)
+            .send({ msg: "User registerd successfully", token, refreshToken });
         })
         .catch((err) => res.status(500).send(err));
     });
@@ -94,10 +108,23 @@ async function login(req, res) {
         username: user.username,
       });
 
+      const refreshToken = createRefreshToken({
+        userId: user._id,
+        username: user.username,
+      });
+
+      res.cookie("jwt", refreshToken, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "None",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
       return res.status(200).send({
         msg: "Login Successfull",
         username: user.username,
         token,
+        refreshToken,
       });
     });
   } catch (error) {
@@ -142,4 +169,44 @@ async function updateUser(req, res) {
   }
 }
 
-module.exports = { registerUser, login, getUser, updateUser };
+async function refreshToken(req, res) {
+  const { refreshToken } = req.body;
+  // const { jwt } = req.cookie;
+
+  try {
+    if (!refreshToken) throw new Error("Token not found");
+    jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET,
+      function (err, decoded) {
+        if (err) throw new Error("Auth Failed");
+
+        const token = createToken({
+          userId: decoded._id,
+          username: decoded.username,
+        });
+
+        res.status(200).send({ token });
+      }
+    );
+  } catch (error) {
+    return res.status(400).send({ error: error.message });
+  }
+}
+
+async function logout(req, res) {
+  const { jwt } = req.cookies;
+  if (!cookies?.jwt) return res.status(204);
+  res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: false });
+
+  res.json({ message: "Cookie Cleared" });
+}
+
+module.exports = {
+  registerUser,
+  login,
+  getUser,
+  updateUser,
+  refreshToken,
+  logout,
+};
