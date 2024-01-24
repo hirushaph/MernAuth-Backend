@@ -5,9 +5,9 @@ function authenticate(req, res, next) {
   const token = req.headers?.authorization?.split(" ")[1];
 
   // check token exits and verify
-  if (!token) return res.status(401).send({ error: "Auth Failed" });
+  if (!token) return res.status(401).send({ error: "Auth token not found" });
 
-  jwt.verify(token, process.env.JWT_SKEY, function (err, decoded) {
+  jwt.verify(token, process.env.JWT_ACCESS_SECRET, function (err, decoded) {
     if (err) return res.status(401).send({ error: "Auth Failed" });
 
     // set decoded value to req for use later
