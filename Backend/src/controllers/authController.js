@@ -107,6 +107,8 @@ async function login(req, res) {
 
 async function getUser(req, res) {
   const { username } = req.params;
+  if (username != req.user.username)
+    return res.status(400).send({ error: "Auth Failed" });
 
   if (!username) return res.send(400).send({ error: "Username is required" });
 
@@ -119,7 +121,25 @@ async function getUser(req, res) {
 }
 
 async function updateUser(req, res) {
-  res.json("update user");
+  const { userId } = req.user;
+  try {
+    if (!userId) throw new Error("User not found");
+
+    const body = req.body;
+
+    // check if body is empty
+    if (Object.keys(body).length === 0)
+      throw new Error("Update body cannot be empty");
+
+    // update the user
+    const updateUser = UserModel.updateOne({ _id: userId }, body);
+
+    if (!updateUser) throw new Error("User Update Failed");
+
+    res.status(201).send({ msg: "User updated successfully" });
+  } catch (error) {
+    return res.status(400).send({ error: error.message });
+  }
 }
 
 module.exports = { registerUser, login, getUser, updateUser };
