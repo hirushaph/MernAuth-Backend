@@ -60,8 +60,6 @@ async function sendEmail(options, email) {
     // text: "Hello world?", // plain text body
     html: email, // html body
   });
-
-  console.log(info);
 }
 
 module.exports = { sendEmail, emailBodyGenerate };
