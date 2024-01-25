@@ -7,6 +7,7 @@ const otpGenerator = require("otp-generator");
 const OtpModel = require("../models/passwordOtpModel");
 const CustomError = require("../utils/customError");
 const { createToken, createRefreshToken } = require("../utils/helpers");
+const sendEmail = require("../utils/emai");
 
 // bcrypt salt rounds
 const saltRounds = 10;
@@ -87,7 +88,6 @@ async function login(req, res) {
     if (!password) return res.send({ error: "Password is required" });
 
     const user = await UserModel.findOne({ username });
-    console.log(user);
 
     if (!user) return res.status(404).send({ error: "Username not found" });
 
@@ -215,7 +215,11 @@ async function generateOtp(req, res, next) {
 
       newOtp
         .save()
-        .then(() => res.send({ msg: "Otp send successfully", otp }))
+        .then(() => {
+          const message = `Your password reset otp is ${otp} , this otp valid for only 1hour`;
+
+          res.send({ msg: "Otp send successfully", otp });
+        })
         .catch((err) => next(err));
     });
 
