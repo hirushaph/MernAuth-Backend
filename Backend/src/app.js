@@ -18,6 +18,10 @@ const PORT = process.env.PORT || "3000";
 
 // API Router
 
+app.get("/", (req, res) => {
+  res.send({ helo: "hello" });
+});
+
 app.use("/api/v1", router);
 
 app.all("*", (req, res, next) => {
