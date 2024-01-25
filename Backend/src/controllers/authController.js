@@ -197,6 +197,7 @@ async function generateOtp(req, res, next) {
     if (!username) throw new Error("Username is required");
 
     const user = await UserModel.findOne({ username });
+    if (!user) throw new CustomError("User not found", 400);
 
     const otp = otpGenerator.generate(6, {
       lowerCaseAlphabets: false,
@@ -209,25 +210,37 @@ async function generateOtp(req, res, next) {
         if (err) throw new Error("Failed generate otp");
 
         // delete exiting otps in database for this user
-        await OtpModel.deleteMany({ userId: user._id });
 
-        const newOtp = new OtpModel({
-          userId: user._id.toString(),
-          otp: hash,
-          expiredAt: Date.now() + 60 * 60 * 1000,
-        });
+        const otpdb = await OtpModel.findOne({ username });
 
-        await newOtp.save();
+        if (!otpdb) {
+          const newOtp = new OtpModel({
+            username: user.username,
+            otp: hash,
+            expiredAt: Date.now() + 60 * 60 * 1000,
+          });
+          await newOtp.save();
+        }
+
+        await OtpModel.findOneAndUpdate(
+          { username },
+          {
+            otp: hash,
+            expiredAt: Date.now() + 60 * 60 * 1000,
+          }
+        );
 
         const emailBody = emailBodyGenerate({
           username: user.username,
           otp,
         });
 
-        await sendEmail(
-          { email: user.email, subject: "MernAuth Password Reset" },
-          emailBody
-        );
+        // await sendEmail(
+        //   { email: user.email, subject: "MernAuth Password Reset" },
+        //   emailBody
+        // );
+
+        req.app.locals.username = username;
 
         res.send({ msg: "Otp sent successfully", otp });
       } catch (err) {
@@ -242,27 +255,38 @@ async function generateOtp(req, res, next) {
 // OTP VERICATTION
 async function verifyOtp(req, res, next) {
   try {
-    const { otp, username } = req.body;
+    const { otp } = req.body;
+    const { username } = req?.app?.locals;
+
+    if (!username) throw new CustomError("Authentication Failed", 500);
     if (!otp) throw new CustomError("Otp is required", 400);
-    if (!username) throw new CustomError("Username is required", 400);
 
-    const user = await UserModel.findOne({ username });
-    if (!user) throw new CustomError("Username not Found", 400);
-    const userId = user._id.toString();
+    const hashedotp = await OtpModel.findOne({ username });
 
-    const hashedOtp = await OtpModel.findOne({ userId });
+    if (!hashedotp && !hashedotp.otp) throw new CustomError("OTP is not valid");
 
-    if (!hashedOtp) throw new CustomError("OTP is not valid", 400);
+    if (hashedotp.expiredAt < Date.now())
+      throw new CustomError("OTP is expired");
 
-    bcrypt.compare(otp, hashedOtp.otp, function (err, result) {
-      if (err) next(err);
+    bcrypt.compare(otp, hashedotp.otp, async function (err, result) {
+      try {
+        if (err) throw new Error("OTP Verification Faield", 500);
 
-      if (!result) throw new CustomError("Otp is not valid", 400);
-
-      OtpModel.deleteMany({ userId }).then(() => {
+        if (!result) throw new Error("OTP is not valid", 400);
         req.app.locals.resetSession = true;
-        res.send({ msg: "Otp Verified" });
-      });
+
+        await OtpModel.findOneAndUpdate(
+          { username },
+          {
+            otp: null,
+            expiredAt: null,
+          }
+        );
+
+        res.send({ msg: "OTP Verified Successfully" });
+      } catch (error) {
+        next(error);
+      }
     });
   } catch (error) {
     next(error);
@@ -272,21 +296,25 @@ async function verifyOtp(req, res, next) {
 // RESET PASSWORD
 async function resetPassword(req, res, next) {
   try {
-    const { resetSession } = req.app.locals;
+    const { resetSession, username } = req.app.locals;
     if (!resetSession) throw new Error("Authentication Failed");
-    req.app.locals.resetSession = false;
-    const { username, password, confirmpassword } = req.body;
-    if (!username || !password || !confirmpassword)
+    if (!username) throw new Error("Authentication Failed");
+
+    const { password, confirmpassword } = req.body;
+    if (!password || !confirmpassword)
       throw new CustomError("All fields are required", 400);
 
     const user = UserModel.findOne({ username });
     if (!user) throw new CustomError("User not found", 400);
 
-    if (!password === confirmpassword)
+    if (password !== confirmpassword)
       throw new CustomError("Password does not match");
 
     if (!validator.isStrongPassword(password))
       throw new CustomError("Password is not strong");
+
+    req.app.locals.resetSession = false;
+    req.app.locals.username = null;
 
     bcrypt.hash(password, saltRounds, async function (err, hash) {
       if (err) throw new CustomError("Internal Server Error", 500);
