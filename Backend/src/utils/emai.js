@@ -1,14 +1,15 @@
 const nodemailer = require("nodemailer");
 var Mailgen = require("mailgen");
-require("dotenv").config;
+require("dotenv").config();
 
 // Nodemailer Smtp details, defined in .env
 const transporter = nodemailer.createTransport({
   host: process.env.HOST,
-  port: process.env.EMAIL_PORT,
+  port: process.env.EPORT,
+  secure: false,
   auth: {
     user: process.env.USER,
-    pass: process.env.PASS,
+    pass: process.env.PASSWORD,
   },
 });
 
@@ -25,7 +26,7 @@ const mailGenerator = new Mailgen({
 });
 
 // Generate Email html with otp details
-function emailGenearate(options) {
+function emailBodyGenerate(options) {
   let email = {
     body: {
       name: options.username,
@@ -51,13 +52,16 @@ function emailGenearate(options) {
 }
 
 // send email to client
-async function sendMail(options, email) {
+async function sendEmail(options, email) {
   const info = await transporter.sendMail({
-    from: '"MernAuth" <merauth@localhost.local>', // sender address
+    from: '"MernAuth" <test@merauth.local>', // sender address
     to: options.email, // list of receivers
-    subject: options.subject,
+    subject: options.subject, // Subject line
+    // text: "Hello world?", // plain text body
     html: email, // html body
   });
+
+  console.log(info);
 }
 
-module.export = sendMail;
+module.exports = { sendEmail, emailBodyGenerate };

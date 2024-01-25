@@ -7,7 +7,7 @@ const otpGenerator = require("otp-generator");
 const OtpModel = require("../models/passwordOtpModel");
 const CustomError = require("../utils/customError");
 const { createToken, createRefreshToken } = require("../utils/helpers");
-const sendEmail = require("../utils/emai");
+const { sendEmail, emailBodyGenerate } = require("../utils/emai");
 
 // bcrypt salt rounds
 const saltRounds = 10;
@@ -204,26 +204,36 @@ async function generateOtp(req, res, next) {
       specialChars: false,
     });
 
-    bcrypt.hash(otp, 10, function (err, hash) {
-      if (err) throw new Error("Failed generate otp");
+    bcrypt.hash(otp, 10, async function (err, hash) {
+      try {
+        if (err) throw new Error("Failed generate otp");
 
-      const newOtp = new OtpModel({
-        userId: user._id.toString(),
-        otp: hash,
-        expiredAt: Date.now() + 60 * 60 * 1000,
-      });
+        // delete exiting otps in database for this user
+        await OtpModel.deleteMany({ userId: user._id });
 
-      newOtp
-        .save()
-        .then(() => {
-          const message = `Your password reset otp is ${otp} , this otp valid for only 1hour`;
+        const newOtp = new OtpModel({
+          userId: user._id.toString(),
+          otp: hash,
+          expiredAt: Date.now() + 60 * 60 * 1000,
+        });
 
-          res.send({ msg: "Otp send successfully", otp });
-        })
-        .catch((err) => next(err));
+        await newOtp.save();
+
+        const emailBody = emailBodyGenerate({
+          username: user.username,
+          otp,
+        });
+
+        await sendEmail(
+          { email: user.email, subject: "MernAuth Password Reset" },
+          emailBody
+        );
+
+        res.send({ msg: "Otp sent successfully", otp });
+      } catch (err) {
+        next(err);
+      }
     });
-
-    console.log(otp);
   } catch (error) {
     next(error);
   }
@@ -263,8 +273,10 @@ async function verifyOtp(req, res, next) {
 async function resetPassword(req, res, next) {
   try {
     const { resetSession } = req.app.locals;
+    if (!resetSession) throw new Error("Authentication Failed");
+    req.app.locals.resetSession = false;
     const { username, password, confirmpassword } = req.body;
-    if (!resetSession || !username || !password || !confirmpassword)
+    if (!username || !password || !confirmpassword)
       throw new CustomError("All fields are required", 400);
 
     const user = UserModel.findOne({ username });
@@ -276,16 +288,15 @@ async function resetPassword(req, res, next) {
     if (!validator.isStrongPassword(password))
       throw new CustomError("Password is not strong");
 
-    bcrypt.hash(password, saltRounds, function (err, hash) {
+    bcrypt.hash(password, saltRounds, async function (err, hash) {
       if (err) throw new CustomError("Internal Server Error", 500);
-      user.password = hash;
+      const updated = await UserModel.findOneAndUpdate(
+        { username },
+        { password: hash }
+      );
+      if (!updated) throw new Error("Password Reset Failed", 500);
 
-      user
-        .save()
-        .then(() => {
-          res.status(200).send({ msg: "User updated successfully" });
-        })
-        .catch((err) => next(err));
+      res.send({ msg: "Password reset successfully" });
     });
   } catch (error) {
     next(error);
