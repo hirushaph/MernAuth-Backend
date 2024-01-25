@@ -8,20 +8,27 @@ const {
   logout,
   generateOtp,
   verifyOtp,
+  resetPassword,
 } = require("../controllers/authController");
-const authenticate = require("../middleware/authMiddleware");
+const { authenticate, localVariable } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// POST
 router.post("/register", registerUser);
 router.post("/login", login);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
-router.post("/verifyotp", verifyOtp);
+router.post("/verifyotp", localVariable, verifyOtp);
 
+// GET
 router.get("/user/:username", authenticate, getUser);
 router.get("/generateotp", generateOtp);
 
+// PUT
 router.put("/updateuser", authenticate, updateUser);
+router.put("/resetpassowrd", resetPassword);
 
+// DELETE
+// router.delete("/deleteuser");
 module.exports = router;

@@ -6,24 +6,12 @@ const UserModel = require("../models/userModel");
 const otpGenerator = require("otp-generator");
 const OtpModel = require("../models/passwordOtpModel");
 const CustomError = require("../utils/customError");
+const { createToken, createRefreshToken } = require("../utils/helpers");
 
 // bcrypt salt rounds
 const saltRounds = 10;
 
-function createToken(data) {
-  const token = jwt.sign(data, process.env.JWT_ACCESS_SECRET, {
-    expiresIn: "10m",
-  });
-  return token;
-}
-
-function createRefreshToken(data) {
-  const token = jwt.sign(data, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: "90d",
-  });
-  return token;
-}
-
+// REGISTER USER
 async function registerUser(req, res) {
   const { username, email, password } = req.body;
 
@@ -90,6 +78,7 @@ async function registerUser(req, res) {
   }
 }
 
+// LOGIN
 async function login(req, res) {
   const { username, password } = req.body;
 
@@ -136,6 +125,7 @@ async function login(req, res) {
   }
 }
 
+// GET USER
 async function getUser(req, res) {
   const { username } = req.params;
   if (username != req.user.username)
@@ -151,6 +141,7 @@ async function getUser(req, res) {
   res.send(rest);
 }
 
+// UPDATE USER
 async function updateUser(req, res) {
   const { userId } = req.user;
   try {
@@ -173,6 +164,7 @@ async function updateUser(req, res) {
   }
 }
 
+// REFRESH TOKEN
 async function refreshToken(req, res) {
   const { refreshToken } = req.body;
   // const { jwt } = req.cookie;
@@ -198,6 +190,7 @@ async function refreshToken(req, res) {
   }
 }
 
+// GENERATE OTP
 async function generateOtp(req, res, next) {
   try {
     const { username } = req?.query;
@@ -222,17 +215,8 @@ async function generateOtp(req, res, next) {
 
       newOtp
         .save()
-        .then(() => {
-          // TODO Send otp via email
-          return res.json({
-            msg: "otp send successfulluy",
-            otp,
-            username: user.username,
-          });
-        })
-        .catch((err) => {
-          next(err);
-        });
+        .then(() => res.send({ msg: "Otp send successfully", otp }))
+        .catch((err) => next(err));
     });
 
     console.log(otp);
@@ -241,6 +225,7 @@ async function generateOtp(req, res, next) {
   }
 }
 
+// OTP VERICATTION
 async function verifyOtp(req, res, next) {
   try {
     const { otp, username } = req.body;
@@ -261,6 +246,7 @@ async function verifyOtp(req, res, next) {
       if (!result) throw new CustomError("Otp is not valid", 400);
 
       OtpModel.deleteMany({ userId }).then(() => {
+        req.app.locals.resetSession = true;
         res.send({ msg: "Otp Verified" });
       });
     });
@@ -269,6 +255,40 @@ async function verifyOtp(req, res, next) {
   }
 }
 
+// RESET PASSWORD
+async function resetPassword(req, res, next) {
+  try {
+    const { resetSession } = req.app.locals;
+    const { username, password, confirmpassword } = req.body;
+    if (!resetSession || !username || !password || !confirmpassword)
+      throw new CustomError("All fields are required", 400);
+
+    const user = UserModel.findOne({ username });
+    if (!user) throw new CustomError("User not found", 400);
+
+    if (!password === confirmpassword)
+      throw new CustomError("Password does not match");
+
+    if (!validator.isStrongPassword(password))
+      throw new CustomError("Password is not strong");
+
+    bcrypt.hash(password, saltRounds, function (err, hash) {
+      if (err) throw new CustomError("Internal Server Error", 500);
+      user.password = hash;
+
+      user
+        .save()
+        .then(() => {
+          res.status(200).send({ msg: "User updated successfully" });
+        })
+        .catch((err) => next(err));
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// LOGOUT
 async function logout(req, res) {
   const { jwt } = req.cookies;
   if (!cookies?.jwt) return res.status(204);
@@ -285,5 +305,6 @@ module.exports = {
   refreshToken,
   generateOtp,
   verifyOtp,
+  resetPassword,
   logout,
 };

@@ -16,4 +16,11 @@ function authenticate(req, res, next) {
   });
 }
 
-module.exports = authenticate;
+function localVariable(req, res, next) {
+  req.app.locals = {
+    resetSession: false,
+  };
+  next();
+}
+
+module.exports = { authenticate, localVariable };
