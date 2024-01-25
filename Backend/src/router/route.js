@@ -19,11 +19,11 @@ router.post("/register", registerUser);
 router.post("/login", login);
 router.post("/refresh", refreshToken);
 router.post("/logout", logout);
-router.post("/verifyotp", localVariable, verifyOtp);
+router.post("/verifyotp", verifyOtp);
 
 // GET
 router.get("/user/:username", authenticate, getUser);
-router.get("/generateotp", generateOtp);
+router.get("/generateotp", localVariable, generateOtp);
 
 // PUT
 router.put("/updateuser", authenticate, updateUser);
