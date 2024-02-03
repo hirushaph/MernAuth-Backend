@@ -33,10 +33,10 @@ async function registerUser(req, res) {
     const usernameExits = await UserModel.exists({ username });
     const emailExits = await UserModel.exists({ email });
     if (emailExits || usernameExits) {
-      let erros = [];
+      let errors = [];
 
-      if (usernameExits) erros.push("Username unavaliable");
-      if (emailExits) erros.push("Email already in use");
+      if (usernameExits) errors.push("Username unavaliable");
+      if (emailExits) errors.push("Email already in use");
 
       return res.status(400).json({ erros });
     }
