@@ -33,12 +33,12 @@ async function registerUser(req, res) {
     const usernameExits = await UserModel.exists({ username });
     const emailExits = await UserModel.exists({ email });
     if (emailExits || usernameExits) {
-      let errors = [];
+      let erros = [];
 
-      if (usernameExits) errors.push("Username unavaliable");
-      if (emailExits) errors.push("Email already in use");
+      if (usernameExits) erros.push("Username unavaliable");
+      if (emailExits) erros.push("Email already in use");
 
-      return res.status(400).json({ errors });
+      return res.status(400).json({ erros });
     }
 
     // Hash password and Store in db
@@ -70,7 +70,7 @@ async function registerUser(req, res) {
 
           res
             .status(201)
-            .send({ username: user.username, token, refreshToken });
+            .send({ msg: "User registerd successfully", token, refreshToken });
         })
         .catch((err) => res.status(500).send(err));
     });
