@@ -70,7 +70,7 @@ async function registerUser(req, res) {
 
           res
             .status(201)
-            .send({ msg: "User registerd successfully", token, refreshToken });
+            .send({ username: user.username, token, refreshToken });
         })
         .catch((err) => res.status(500).send(err));
     });
