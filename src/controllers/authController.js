@@ -63,6 +63,7 @@ async function registerUser(req, res) {
             username: user.username,
           });
 
+          // Generate Refresh Token
           const refreshToken = createRefreshToken({
             userId: user._id,
             username: user.username,
