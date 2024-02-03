@@ -38,7 +38,7 @@ async function registerUser(req, res) {
       if (usernameExits) errors.push("Username unavaliable");
       if (emailExits) errors.push("Email already in use");
 
-      return res.status(400).json({ erros });
+      return res.status(400).json({ errors });
     }
 
     // Hash password and Store in db
@@ -95,7 +95,8 @@ async function login(req, res) {
     bcrypt.compare(password, user.password, function (err, result) {
       if (err) return res.status(500).send({ error: "Internal Server Error" });
 
-      if (!result) return res.status(400).send({ error: "Wrong Password" });
+      if (!result)
+        return res.status(400).send({ error: "Username or Password Wrong" });
 
       const token = createToken({
         userId: user._id,
