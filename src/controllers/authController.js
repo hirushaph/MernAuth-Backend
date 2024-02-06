@@ -109,17 +109,15 @@ async function login(req, res) {
       });
 
       res.cookie("jwt", refreshToken, {
-        httpOnly: true,
-        secure: false,
-        sameSite: "None",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true, // only accessible by web server
+        secure: false, // https
+        sameSite: "None", //cross-site cookie
+        maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
       });
 
       return res.status(200).send({
-        msg: "Login Successfull",
         username: user.username,
         token,
-        refreshToken,
       });
     });
   } catch (error) {
@@ -168,20 +166,27 @@ async function updateUser(req, res) {
 
 // REFRESH TOKEN
 async function refreshToken(req, res) {
-  const { refreshToken } = req.body;
-  // const { jwt } = req.cookie;
+  // const { refreshToken } = req.body;
+  const cookies = req.cookies;
 
   try {
-    if (!refreshToken) throw new Error("Token not found");
+    if (!cookies?.jwt) throw new Error("Token not found");
+    const refreshToken = cookies.jwt;
     jwt.verify(
       refreshToken,
       process.env.JWT_REFRESH_SECRET,
-      function (err, decoded) {
+      async function (err, decoded) {
         if (err) throw new Error("Auth Failed");
 
-        const token = createToken({
-          userId: decoded._id,
+        const foundUser = await UserModel.findOne({
           username: decoded.username,
+        });
+
+        if (!foundUser) throw new Error("Unauthorizeds");
+
+        const token = createToken({
+          userId: foundUser._id,
+          username: foundUser.username,
         });
 
         res.status(200).send({ token });
@@ -336,7 +341,7 @@ async function resetPassword(req, res, next) {
 // LOGOUT
 async function logout(req, res) {
   const { jwt } = req.cookies;
-  if (!cookies?.jwt) return res.status(204);
+  if (!jwt) return res.status(204);
   res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: false });
 
   res.json({ message: "Cookie Cleared" });
