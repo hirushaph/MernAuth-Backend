@@ -111,7 +111,8 @@ async function login(req, res) {
       res.cookie("jwt", refreshToken, {
         httpOnly: true, // only accessible by web server
         secure: false, // https
-        sameSite: "None", //cross-site cookie
+        sameSite: "lax", //cross-site cookie
+        secure: false,
         maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
       });
 
