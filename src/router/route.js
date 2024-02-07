@@ -17,13 +17,13 @@ const router = express.Router();
 // POST
 router.post("/register", registerUser);
 router.post("/login", login);
-router.post("/refresh", refreshToken);
 router.post("/logout", logout);
 router.post("/verifyotp", verifyOtp);
 
 // GET
 router.get("/user/:username", authenticate, getUser);
 router.get("/generateotp", localVariable, generateOtp);
+router.get("/refresh", refreshToken);
 
 // PUT
 router.put("/updateuser", authenticate, updateUser);

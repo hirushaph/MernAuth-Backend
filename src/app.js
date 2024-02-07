@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const dbConnect = require("./db/conn");
 const mongoose = require("mongoose");
 const router = require("./router/route");
+const cookieParser = require("cookie-parser");
 
 require("dotenv").config();
 
@@ -11,7 +12,8 @@ const app = express();
 
 // Middlewares
 app.use(express.json());
-app.use(cors());
+app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
+app.use(cookieParser());
 app.use(morgan("tiny"));
 
 const PORT = process.env.PORT || "3000";
