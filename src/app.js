@@ -12,7 +12,7 @@ const app = express();
 
 // Middlewares
 app.use(express.json());
-app.use(cors({ credentials: true, origin: "http://localhost:5173" }));
+app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
 app.use(cookieParser());
 app.use(morgan("tiny"));
 
