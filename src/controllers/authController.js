@@ -166,7 +166,7 @@ async function updateUser(req, res) {
 }
 
 // REFRESH TOKEN
-async function refreshToken(req, res) {
+async function refreshToken(req, res, next) {
   // const { refreshToken } = req.body;
   const cookies = req.cookies;
 
@@ -177,23 +177,29 @@ async function refreshToken(req, res) {
       refreshToken,
       process.env.JWT_REFRESH_SECRET,
       async function (err, decoded) {
-        if (err) throw new Error("Auth Failed");
+        try {
+          console.log(err);
+          if (err) throw new CustomError("Session Expired", 401);
 
-        const foundUser = await UserModel.findOne({
-          username: decoded.username,
-        });
+          const foundUser = await UserModel.findOne({
+            username: decoded.username,
+          });
 
-        if (!foundUser) throw new Error("Unauthorizeds");
+          if (!foundUser) throw new Error("Unauthorized");
 
-        const token = createToken({
-          userId: foundUser._id,
-          username: foundUser.username,
-        });
+          const token = createToken({
+            userId: foundUser._id,
+            username: foundUser.username,
+          });
 
-        res.status(200).send({ token });
+          res.status(200).send({ token });
+        } catch (error) {
+          next(error);
+        }
       }
     );
   } catch (error) {
+    next(error);
     return res.status(400).send({ error: error.message });
   }
 }
