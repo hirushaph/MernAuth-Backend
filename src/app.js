@@ -5,16 +5,24 @@ const dbConnect = require("./db/conn");
 const mongoose = require("mongoose");
 const router = require("./router/route");
 const cookieParser = require("cookie-parser");
+const { default: rateLimit } = require("express-rate-limit");
 
 require("dotenv").config();
 
 const app = express();
+
+// Rate limit
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000, //1 min
+  max: process.env.MAX_API_REQUEST_PER_IP_FOR_MINUTE || 100,
+});
 
 // Middlewares
 app.use(express.json());
 app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
 app.use(cookieParser());
 app.use(morgan("tiny"));
+app.use(limiter);
 
 const PORT = process.env.PORT || "3000";
 
