@@ -349,7 +349,11 @@ async function resetPassword(req, res, next) {
 async function logout(req, res) {
   const { jwt } = req.cookies;
   if (!jwt) return res.status(204);
-  res.clearCookie("jwt", { httpOnly: true, sameSite: "None", secure: false });
+  await res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "None",
+    secure: false,
+  });
 
   res.json({ message: "Cookie Cleared" });
 }
