@@ -6,10 +6,14 @@ const mongoose = require("mongoose");
 const router = require("./router/route");
 const cookieParser = require("cookie-parser");
 const { default: rateLimit } = require("express-rate-limit");
+const helmet = require("helmet");
 
 require("dotenv").config();
 
 const app = express();
+
+// Use Helmet!
+app.use(helmet());
 
 // Rate limit
 const limiter = rateLimit({
