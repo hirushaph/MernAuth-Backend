@@ -249,14 +249,14 @@ async function generateOtp(req, res, next) {
           otp,
         });
 
-        // await sendEmail(
-        //   { email: user.email, subject: "MernAuth Password Reset" },
-        //   emailBody
-        // );
+        await sendEmail(
+          { email: user.email, subject: "MernAuth Password Reset" },
+          emailBody
+        );
 
         req.app.locals.username = username;
 
-        res.send({ msg: "Otp sent successfully", otp });
+        res.send({ msg: "Otp Sent to Your Email" });
       } catch (err) {
         next(err);
       }
