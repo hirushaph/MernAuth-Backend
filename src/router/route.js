@@ -27,7 +27,7 @@ router.get("/refresh", refreshToken);
 
 // PUT
 router.put("/updateuser", authenticate, updateUser);
-router.put("/resetpassowrd", resetPassword);
+router.put("/resetpassword", resetPassword);
 
 // DELETE
 // router.delete("/deleteuser");
