@@ -353,9 +353,9 @@ async function resetPassword(req, res, next) {
 
 // LOGOUT
 async function logout(req, res) {
-  const { jwt } = req.cookies;
-  if (!jwt) return res.status(204);
-  await res.clearCookie("jwt", {
+  const { refresh } = req.cookies;
+  if (!refresh) return res.status(204);
+  await res.clearCookie("refresh", {
     httpOnly: true,
     sameSite: "None",
     secure: false,
