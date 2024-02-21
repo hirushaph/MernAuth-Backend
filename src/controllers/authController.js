@@ -69,9 +69,15 @@ async function registerUser(req, res) {
             username: user.username,
           });
 
-          res
-            .status(201)
-            .send({ username: user.username, token, refreshToken });
+          res.cookie("refresh", refreshToken, {
+            httpOnly: true, // only accessible by web server
+            secure: false, // https
+            sameSite: "lax", //cross-site cookie
+            secure: false,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
+          });
+
+          res.status(201).send({ username: user.username, token });
         })
         .catch((err) => res.status(500).send(err));
     });
@@ -108,7 +114,7 @@ async function login(req, res) {
         username: user.username,
       });
 
-      res.cookie("jwt", refreshToken, {
+      res.cookie("refresh", refreshToken, {
         httpOnly: true, // only accessible by web server
         secure: false, // https
         sameSite: "lax", //cross-site cookie
@@ -171,8 +177,8 @@ async function refreshToken(req, res, next) {
   const cookies = req.cookies;
 
   try {
-    if (!cookies?.jwt) throw new Error("Token not found");
-    const refreshToken = cookies.jwt;
+    if (!cookies?.refresh) throw new Error("Token not found");
+    const refreshToken = cookies.refresh;
     jwt.verify(
       refreshToken,
       process.env.JWT_REFRESH_SECRET,
