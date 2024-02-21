@@ -98,7 +98,7 @@ async function login(req, res) {
 
     if (!user) return res.status(404).send({ error: "Username not found" });
 
-    bcrypt.compare(password, user.password, function (err, result) {
+    bcrypt.compare(password, user.password, async function (err, result) {
       if (err) return res.status(500).send({ error: "Internal Server Error" });
 
       if (!result)
@@ -118,9 +118,15 @@ async function login(req, res) {
         httpOnly: true, // only accessible by web server
         secure: false, // https
         sameSite: "lax", //cross-site cookie
-        secure: false,
         maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
       });
+
+      // Save last login time
+
+      await UserModel.findOneAndUpdate(
+        { username },
+        { last_login: Date.now() }
+      );
 
       return res.status(200).send({
         username: user.username,
@@ -354,10 +360,11 @@ async function resetPassword(req, res, next) {
 // LOGOUT
 async function logout(req, res) {
   const { refresh } = req.cookies;
-  if (!refresh) return res.status(204);
+
+  if (!refresh) return res.sendStatus(204);
   await res.clearCookie("refresh", {
     httpOnly: true,
-    sameSite: "None",
+    sameSite: "lax",
     secure: false,
   });
 
