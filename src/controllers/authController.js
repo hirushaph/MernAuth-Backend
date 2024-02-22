@@ -16,6 +16,9 @@ const { sendEmail, emailBodyGenerate } = require("../utils/emai");
 // bcrypt salt rounds
 const saltRounds = 10;
 
+// Production or development status
+const status = process.env.STATUS || "development";
+
 // REGISTER USER
 async function registerUser(req, res) {
   const { username, email, password } = req.body;
@@ -73,15 +76,20 @@ async function registerUser(req, res) {
             username: user.username,
           });
 
-          res.cookie("refresh", refreshToken, {
+          const options = {
             httpOnly: true, // only accessible by web server
             secure: false, // https
             sameSite: "lax", //cross-site cookie
-            secure: false,
             maxAge: convertToMilliseconds(
               process.env.REFRESH_TOKEN_EXPIRE_TIME
             ), // expiry time
-          });
+          };
+
+          if (status === "production") {
+            options.secure = true;
+          }
+
+          res.cookie("refresh", refreshToken, options);
 
           res.status(201).send({ username: user.username, token });
         })
@@ -120,12 +128,18 @@ async function login(req, res) {
         username: user.username,
       });
 
-      res.cookie("refresh", refreshToken, {
+      const options = {
         httpOnly: true, // only accessible by web server
         secure: false, // https
         sameSite: "lax", //cross-site cookie
-        maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
-      });
+        maxAge: convertToMilliseconds(process.env.REFRESH_TOKEN_EXPIRE_TIME), // expiry time
+      };
+
+      if (status === "production") {
+        options.secure = true;
+      }
+
+      res.cookie("refresh", refreshToken, options);
 
       // Save last login time
 
