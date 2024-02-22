@@ -6,7 +6,11 @@ const UserModel = require("../models/userModel");
 const otpGenerator = require("otp-generator");
 const OtpModel = require("../models/passwordOtpModel");
 const CustomError = require("../utils/customError");
-const { createToken, createRefreshToken } = require("../utils/helpers");
+const {
+  createToken,
+  createRefreshToken,
+  convertToMilliseconds,
+} = require("../utils/helpers");
 const { sendEmail, emailBodyGenerate } = require("../utils/emai");
 
 // bcrypt salt rounds
@@ -74,7 +78,9 @@ async function registerUser(req, res) {
             secure: false, // https
             sameSite: "lax", //cross-site cookie
             secure: false,
-            maxAge: 7 * 24 * 60 * 60 * 1000, // expiry time
+            maxAge: convertToMilliseconds(
+              process.env.REFRESH_TOKEN_EXPIRE_TIME
+            ), // expiry time
           });
 
           res.status(201).send({ username: user.username, token });
@@ -190,7 +196,6 @@ async function refreshToken(req, res, next) {
       process.env.JWT_REFRESH_SECRET,
       async function (err, decoded) {
         try {
-          console.log(err);
           if (err) throw new CustomError("Session Expired", 401);
 
           const foundUser = await UserModel.findOne({
