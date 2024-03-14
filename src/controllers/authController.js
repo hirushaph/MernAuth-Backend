@@ -45,7 +45,7 @@ async function registerUser(req, res) {
       if (usernameExits) errors.push("Username unavaliable");
       if (emailExits) errors.push("Email already in use");
 
-      return res.status(400).json({ errors });
+      return res.status(400).send({ errors });
     }
 
     // Hash password and Store in db
