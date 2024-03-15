@@ -5,6 +5,7 @@ const router = require("./router/route");
 const cookieParser = require("cookie-parser");
 const { default: rateLimit } = require("express-rate-limit");
 const helmet = require("helmet");
+const { MAX_API_REQUEST_PER_IP_FOR_MINUTE } = require("./config");
 
 require("dotenv").config();
 
@@ -16,7 +17,7 @@ app.use(helmet());
 // Rate limit
 const limiter = rateLimit({
   windowMs: 1 * 60 * 1000, //1 min
-  max: process.env.MAX_API_REQUEST_PER_IP_FOR_MINUTE || 100,
+  max: MAX_API_REQUEST_PER_IP_FOR_MINUTE || 100,
 });
 
 // Middlewares
