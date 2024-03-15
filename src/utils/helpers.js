@@ -24,9 +24,8 @@ function convertToMilliseconds(timeComponent) {
   };
 
   const value = parseInt(timeComponent);
-  console.log(value);
+
   const type = timeComponent.charAt(timeComponent.length - 1);
-  console.log(type);
 
   if (!isNaN(value) && conversions[type]) {
     return value * conversions[type];
