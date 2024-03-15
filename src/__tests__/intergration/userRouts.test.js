@@ -22,9 +22,7 @@ const testUser = {
 };
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGODB_URL_TEST).then(() => {
-    console.log("db connected");
-  });
+  await mongoose.connect(process.env.MONGODB_URL_TEST);
 });
 
 afterAll(async () => {
