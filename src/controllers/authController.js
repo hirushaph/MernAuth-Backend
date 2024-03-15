@@ -12,6 +12,7 @@ const {
   convertToMilliseconds,
 } = require("../utils/helpers");
 const { sendEmail, emailBodyGenerate } = require("../utils/emai");
+const { REFRESH_TOKEN_EXPIRE_TIME } = require("../config");
 
 // bcrypt salt rounds
 const saltRounds = 10;
@@ -80,9 +81,7 @@ async function registerUser(req, res) {
             httpOnly: true, // only accessible by web server
             secure: false, // https
             sameSite: "lax", //cross-site cookie
-            maxAge: convertToMilliseconds(
-              process.env.REFRESH_TOKEN_EXPIRE_TIME
-            ), // expiry time
+            maxAge: convertToMilliseconds(REFRESH_TOKEN_EXPIRE_TIME), // expiry time
           };
 
           if (status === "production") {
@@ -132,7 +131,7 @@ async function login(req, res) {
         httpOnly: true, // only accessible by web server
         secure: false, // https
         sameSite: "lax", //cross-site cookie
-        maxAge: convertToMilliseconds(process.env.REFRESH_TOKEN_EXPIRE_TIME), // expiry time
+        maxAge: convertToMilliseconds(REFRESH_TOKEN_EXPIRE_TIME), // expiry time
       };
 
       if (status === "production") {
