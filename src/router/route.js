@@ -24,6 +24,10 @@ router.post("/verifyotp", verifyOtp);
 router.get("/user/:username", authenticate, getUser);
 router.get("/generateotp", localVariable, generateOtp);
 router.get("/refresh", refreshToken);
+// Testin
+router.get("/test", (req, res) => {
+  res.send({ message: "its working" });
+});
 
 // PUT
 router.put("/updateuser", authenticate, updateUser);
