@@ -7,8 +7,6 @@ const { default: rateLimit } = require("express-rate-limit");
 const helmet = require("helmet");
 const { MAX_API_REQUEST_PER_IP_FOR_MINUTE } = require("./config");
 
-require("dotenv").config();
-
 const app = express();
 
 // Use Helmet!

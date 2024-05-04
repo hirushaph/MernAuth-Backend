@@ -2,11 +2,13 @@ const mongoose = require("mongoose");
 const app = require("./app");
 const dbConnect = require("./db/conn");
 
+require("dotenv").config();
+
 // Start Server if datbase connected
 async function initializeApp() {
   try {
     await dbConnect();
-    app.listen(PORT, () => {
+    app.listen(process.env.PORT, () => {
       console.log("Server Started");
     });
   } catch (err) {
