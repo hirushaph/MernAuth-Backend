@@ -176,6 +176,7 @@ async function getUser(req, res) {
 // UPDATE USER
 async function updateUser(req, res) {
   const { userId } = req.user;
+
   try {
     if (!userId) throw new Error("User not found");
 
@@ -185,8 +186,19 @@ async function updateUser(req, res) {
     if (Object.keys(body).length === 0)
       throw new Error("Update body cannot be empty");
 
+    //If password update
+
+    if (body?.password) {
+      hash = await bcrypt.hash(body.password, saltRounds);
+      body.password = hash;
+    }
+
     // update the user
-    const updateUser = await UserModel.findOneAndUpdate({ _id: userId }, body);
+    const updateUser = await UserModel.findOneAndUpdate(
+      { _id: userId },
+      { $set: { ...body } },
+      { new: true }
+    );
 
     if (!updateUser) throw new Error("User Update Failed");
 
